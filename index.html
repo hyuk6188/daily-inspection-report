@@ -33,6 +33,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:#f0f0ee;color:#1a1a1a;min-
 .stat-value{font-size:22px;font-weight:600;color:#1a1a1a}
 .stat-value.danger{color:#a32d2d}
 .stat-sub{font-size:11px;color:#aaa;margin-top:3px}
+.stat-sub.top-list{color:#555;line-height:1.45}
 
 .section-title{font-size:14px;font-weight:500;color:#1a1a1a;margin-bottom:.75rem;display:flex;align-items:center;gap:8px}
 .section-title::before{content:'';display:inline-block;width:3px;height:14px;border-radius:2px;background:#378ADD}
@@ -199,7 +200,7 @@ tbody td{padding:8px 12px;text-align:center;color:#1a1a1a;border:0.5px solid #e0
     <div class="stat-grid">
       <div class="stat-card"><div class="stat-label">금일 점검</div><div class="stat-value" id="s-today-total">0</div><div class="stat-sub">전체 점검 건수</div></div>
       <div class="stat-card"><div class="stat-label">금일 부적합</div><div class="stat-value danger" id="s-today-fail">0</div><div class="stat-sub">부적합 설비 건수</div></div>
-      <div class="stat-card"><div class="stat-label" id="s-month-label">월 누적 점검</div><div class="stat-value" id="s-month-total">0</div><div class="stat-sub">누적 점검 건수</div></div>
+      <div class="stat-card"><div class="stat-label" id="s-month-label">월 부적합 설비</div><div class="stat-value danger" id="s-month-total">0</div><div class="stat-sub top-list" id="s-month-top">부적합 설비 없음</div></div>
       <div class="stat-card"><div class="stat-label">26년 누적 부적합</div><div class="stat-value danger" id="s-year-fail">0</div><div class="stat-sub">설비 점검</div></div>
     </div>
 
@@ -396,7 +397,7 @@ const monthLabel = `${mm}월 ${dd}일`;
 document.getElementById('r-date').textContent = dateLabel;
 document.getElementById('th-today').textContent = monthLabel;
 document.getElementById('th-month').textContent = `${mm}월 누적`;
-document.getElementById('s-month-label').textContent = `${mm}월 누적 점검`;
+document.getElementById('s-month-label').textContent = `${mm}월 부적합 설비`;
 
 // ── 탭 전환 ──
 function clearPrintDisplayOverrides() {
@@ -460,8 +461,14 @@ function renderReport() {
 
   document.getElementById('s-today-total').textContent = todayPass+todayFail;
   document.getElementById('s-today-fail').textContent = todayFail;
-  document.getElementById('s-month-total').textContent = monthPass+monthFail;
+  document.getElementById('s-month-total').textContent = monthFail;
   document.getElementById('s-year-fail').textContent = yearFail;
+  const monthTop = [...data.A, ...data.B]
+    .filter(r => r.mf > 0)
+    .sort((a,b) => b.mf - a.mf)
+    .slice(0,3)
+    .map((r,i) => `${i+1}. ${r.name} ${r.mf}건`);
+  document.getElementById('s-month-top').innerHTML = monthTop.length ? monthTop.join('<br>') : '부적합 설비 없음';
 
   // 검검내용
   const area = document.getElementById('defect-report-area');
