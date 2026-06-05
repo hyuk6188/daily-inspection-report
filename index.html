@@ -498,6 +498,7 @@ function renderManualInputs() {
   const di = document.getElementById('defect-inputs');
   di.innerHTML = '';
   data.defects.forEach((_,i) => renderDefectInput(i));
+  normalizeDefectEquipSelectors();
   document.getElementById('m-remarks').value = data.remarks || '';
 }
 
@@ -510,7 +511,7 @@ function renderDefectInput(i) {
   card.innerHTML = `
     <div class="row">
       <label>구분</label>
-      <select id="di-zone-${i}" onchange="updateDefectEquipOptions(${i})" style="padding:6px 10px;border:0.5px solid #ddd;border-radius:6px;font-size:12px;font-family:'Noto Sans KR',sans-serif">
+      <select id="di-zone-${i}" onchange="handleDefectZoneChange(${i})" style="padding:6px 10px;border:0.5px solid #ddd;border-radius:6px;font-size:12px;font-family:'Noto Sans KR',sans-serif">
         <option ${d.zone==='A동'?'selected':''}>A동</option>
         <option ${d.zone==='B동'?'selected':''}>B동</option>
       </select>
@@ -569,6 +570,26 @@ function updateDefectEquipOptions(i, preferredValue) {
     .map(name => `<option value="${name}" ${name === current ? 'selected' : ''}>${name}</option>`)
     .join('');
   if (!equips.includes(equipSelect.value)) equipSelect.value = equips[0];
+}
+
+function normalizeDefectEquipSelectors() {
+  data.defects.forEach((d, i) => {
+    const current = document.getElementById(`di-equip-${i}`);
+    if (!current || current.tagName === 'SELECT') return;
+    const select = document.createElement('select');
+    select.id = current.id;
+    select.style.cssText = current.style.cssText || "padding:6px 10px;border:0.5px solid #ddd;border-radius:6px;font-size:12px;font-family:'Noto Sans KR',sans-serif";
+    current.replaceWith(select);
+    updateDefectEquipOptions(i, d.equip || current.value);
+  });
+}
+
+function handleDefectZoneChange(i) {
+  const zone = document.getElementById(`di-zone-${i}`)?.value || 'A동';
+  const equips = getEquipListByZone(zone);
+  data.defects[i].zone = zone;
+  data.defects[i].equip = equips[0];
+  updateDefectEquipOptions(i, equips[0]);
 }
 
 function addDefectInput() {
