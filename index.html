@@ -364,7 +364,20 @@ document.getElementById('th-month').textContent = `${mm}월 누적`;
 document.getElementById('s-month-label').textContent = `${mm}월 누적 점검`;
 
 // ── 탭 전환 ──
+function clearPrintDisplayOverrides() {
+  ['tab-report','tab-manual','tab-excel'].forEach(id => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.hidden = false;
+    el.style.removeProperty('display');
+    el.style.removeProperty('visibility');
+    el.style.removeProperty('position');
+    el.removeAttribute('aria-hidden');
+  });
+}
+
 function switchTab(t) {
+  clearPrintDisplayOverrides();
   document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['report','manual','excel'][i]===t));
   document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
   document.getElementById('tab-'+t).classList.add('active');
@@ -748,7 +761,10 @@ renderManualInputs();
 setExcelTarget('A');
 
 function prepareReportPrint() {
-  switchTab('report');
+  clearPrintDisplayOverrides();
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.getElementById('tab-report').classList.add('active');
   renderReport();
   ['tab-manual','tab-excel'].forEach(id => {
     const el = document.getElementById(id);
@@ -766,13 +782,7 @@ function prepareReportPrint() {
 }
 
 function restorePrintTabs() {
-  ['tab-manual','tab-excel'].forEach(id => {
-    const el = document.getElementById(id);
-    if(!el) return;
-    el.hidden = false;
-    el.style.removeProperty('display');
-    el.removeAttribute('aria-hidden');
-  });
+  clearPrintDisplayOverrides();
 }
 
 function printReportOnly() {
