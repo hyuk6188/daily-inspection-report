@@ -108,9 +108,13 @@ tbody td{padding:8px 12px;text-align:center;color:#1a1a1a;border:0.5px solid #e0
 .remove-defect-btn{padding:4px 10px;background:#fcebeb;color:#a32d2d;border:none;border-radius:6px;font-size:11px;cursor:pointer;font-family:'Noto Sans KR',sans-serif}
 
 @media print{
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .tab-bar,.print-btn,.input-tab-only{display:none!important}
   .tab-content{display:none!important}
   #tab-report{display:block!important;padding:0;box-shadow:none;border-radius:0}
+  .stat-card,thead th,.subtotal td,.ic-header,.remarks-box{background:#e8e8e2!important}
+  .total-row td{background:#cfe3f6!important;color:#185fa5!important}
+  .stat-card,.inspection-card,.remarks-box,thead th,tbody td{border-color:#b8b8b0!important}
   body{background:#fff;padding:0}
 }
 </style>
