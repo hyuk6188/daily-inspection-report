@@ -68,6 +68,11 @@ tbody td{padding:8px 12px;text-align:center;color:#1a1a1a;border:0.5px solid #e0
 .copy-btn:hover{background:#333}
 .image-copy-btn{display:inline-flex;align-items:center;gap:6px;margin-bottom:1.5rem;padding:8px 18px;background:#2f7d4f;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;font-family:'Noto Sans KR',sans-serif;cursor:pointer}
 .image-copy-btn:hover{background:#25663f}
+.capture-sharp{color:#000!important}
+.capture-sharp *{text-shadow:none!important;-webkit-font-smoothing:antialiased}
+.capture-sharp .stat-label,.capture-sharp .stat-sub,.capture-sharp thead th,.capture-sharp .ic-header>div{color:#555!important;font-weight:600!important}
+.capture-sharp table,.capture-sharp thead th,.capture-sharp tbody td,.capture-sharp .inspection-card,.capture-sharp .ic-header,.capture-sharp .ic-body>div,.capture-sharp .remarks-box{border-color:#c8c8c2!important}
+.capture-sharp .zero{color:#9a9a9a!important}
 
 /* ── 입력 탭 ── */
 .input-section{margin-bottom:2rem}
@@ -826,14 +831,24 @@ async function copyDashboardImage() {
     showToast('대시보드 이미지를 만드는 중입니다');
     const capture = await loadHtml2Canvas();
     const dashboard = document.querySelector('#tab-report .page');
-    const canvas = await capture(dashboard, {
-      backgroundColor: '#ffffff',
-      scale: 2,
-      useCORS: true,
-      scrollX: 0,
-      scrollY: -window.scrollY,
-      windowWidth: dashboard.scrollWidth
-    });
+    dashboard.classList.add('capture-sharp');
+    await document.fonts?.ready;
+    const captureScale = Math.max(4, Math.min(5, Math.ceil((window.devicePixelRatio || 1) * 2)));
+    let canvas;
+    try {
+      canvas = await capture(dashboard, {
+        backgroundColor: '#ffffff',
+        scale: captureScale,
+        useCORS: true,
+        allowTaint: true,
+        scrollX: 0,
+        scrollY: -window.scrollY,
+        windowWidth: dashboard.scrollWidth,
+        windowHeight: dashboard.scrollHeight
+      });
+    } finally {
+      dashboard.classList.remove('capture-sharp');
+    }
     canvas.toBlob(async blob => {
       if (!blob) {
         showToast('이미지 생성에 실패했습니다');
@@ -852,6 +867,7 @@ async function copyDashboardImage() {
       showToast('이미지 복사가 제한되어 PNG로 저장했습니다');
     }, 'image/png');
   } catch (err) {
+    document.querySelector('#tab-report .page')?.classList.remove('capture-sharp');
     console.error(err);
     showToast('이미지 복사에 실패했습니다. 다시 시도해주세요');
   }
