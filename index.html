@@ -115,6 +115,13 @@ tbody td{padding:8px 12px;text-align:center;color:#1a1a1a;border:0.5px solid #e0
   .stat-card,thead th,.subtotal td,.ic-header,.remarks-box{background:#e8e8e2!important}
   .total-row td{background:#cfe3f6!important;color:#185fa5!important}
   .stat-card,.inspection-card,.remarks-box,thead th,tbody td{border-color:#b8b8b0!important}
+  .section-title,.inspection-card,.ic-header,.ic-body,.ic-body>div,.ic-body .img-cell,.ic-body .img-cell img{
+    break-inside:avoid;
+    page-break-inside:avoid;
+  }
+  .section-title,.ic-header{break-after:avoid;page-break-after:avoid}
+  .inspection-card{overflow:visible}
+  .ic-body .img-cell img{object-fit:contain!important;max-height:220px}
   body{background:#fff;padding:0}
 }
 </style>
