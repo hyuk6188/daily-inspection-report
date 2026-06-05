@@ -510,12 +510,12 @@ function renderDefectInput(i) {
   card.innerHTML = `
     <div class="row">
       <label>구분</label>
-      <select id="di-zone-${i}" style="padding:6px 10px;border:0.5px solid #ddd;border-radius:6px;font-size:12px;font-family:'Noto Sans KR',sans-serif">
+      <select id="di-zone-${i}" onchange="updateDefectEquipOptions(${i})" style="padding:6px 10px;border:0.5px solid #ddd;border-radius:6px;font-size:12px;font-family:'Noto Sans KR',sans-serif">
         <option ${d.zone==='A동'?'selected':''}>A동</option>
         <option ${d.zone==='B동'?'selected':''}>B동</option>
       </select>
       <label>설비명</label>
-      <input id="di-equip-${i}" value="${d.equip}" placeholder="설비명">
+      <select id="di-equip-${i}" style="padding:6px 10px;border:0.5px solid #ddd;border-radius:6px;font-size:12px;font-family:'Noto Sans KR',sans-serif"></select>
     </div>
     <div class="row">
       <label>결과</label>
@@ -544,6 +544,7 @@ function renderDefectInput(i) {
       </div>
     </div>`;
   di.appendChild(card);
+  updateDefectEquipOptions(i, d.equip);
   // 기존 이미지 있으면 썸네일 복원
   if (data.defects[i] && data.defects[i].img) {
     const thumb = document.getElementById('di-img-thumb-'+i);
@@ -554,8 +555,24 @@ function renderDefectInput(i) {
   }
 }
 
+function getEquipListByZone(zone) {
+  return zone === 'B동' ? EQUIP_B : EQUIP_A;
+}
+
+function updateDefectEquipOptions(i, preferredValue) {
+  const zone = document.getElementById(`di-zone-${i}`)?.value || 'A동';
+  const equipSelect = document.getElementById(`di-equip-${i}`);
+  if (!equipSelect) return;
+  const equips = getEquipListByZone(zone);
+  const current = preferredValue || equipSelect.value || data.defects[i]?.equip || equips[0];
+  equipSelect.innerHTML = equips
+    .map(name => `<option value="${name}" ${name === current ? 'selected' : ''}>${name}</option>`)
+    .join('');
+  if (!equips.includes(equipSelect.value)) equipSelect.value = equips[0];
+}
+
 function addDefectInput() {
-  data.defects.push({zone:'A동', equip:'', result:'부적합', note:'', img:''});
+  data.defects.push({zone:'A동', equip:EQUIP_A[0], result:'부적합', note:'', img:''});
   renderDefectInput(data.defects.length-1);
 }
 
