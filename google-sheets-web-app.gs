@@ -1,7 +1,5 @@
 const SPREADSHEET_ID = '1Egpz6f5SjwrwIIncoTzWA6Qsh1W5cx7oUF9OYYsiSXw';
 const SHEET_NAME = 'Sheet1';
-const IMAGE_FOLDER_NAME = '일일 품질점검 이미지';
-
 function doGet(e) {
   var callback = e && e.parameter && e.parameter.callback;
   var payload = loadState_();
@@ -63,33 +61,17 @@ function getSheet_() {
 }
 
 function saveImages_(defects) {
-  var folder = getImageFolder_();
-  return defects.map(function(defect, index) {
+  return defects.map(function(defect) {
     if (!defect || !defect.img || !String(defect.img).startsWith('data:image/')) {
       return defect;
     }
-
-    var match = String(defect.img).match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
-    if (!match) return defect;
-
-    var extension = match[1].split('/')[1].replace('jpeg', 'jpg');
-    var bytes = Utilities.base64Decode(match[2]);
-    var name = 'inspection-' + Date.now() + '-' + index + '.' + extension;
-    var blob = Utilities.newBlob(bytes, match[1], name);
-    var file = folder.createFile(blob);
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 
     var copied = {};
     Object.keys(defect).forEach(function(key) {
       copied[key] = defect[key];
     });
-    copied.img = 'https://drive.google.com/uc?export=view&id=' + file.getId();
+    copied.img = '';
+    copied.imageNote = 'Image is excluded from shared sync. Please upload it again on the report PC.';
     return copied;
   });
-}
-
-function getImageFolder_() {
-  var existing = DriveApp.getFoldersByName(IMAGE_FOLDER_NAME);
-  if (existing.hasNext()) return existing.next();
-  return DriveApp.createFolder(IMAGE_FOLDER_NAME);
 }
