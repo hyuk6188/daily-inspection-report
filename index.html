@@ -58,6 +58,7 @@ tbody td{padding:8px 12px;text-align:center;color:#1a1a1a;border:0.5px solid #e0
 .ic-body>div{padding:12px;font-size:13px;color:#1a1a1a;text-align:center;display:flex;align-items:center;justify-content:center;min-height:60px}
 .ic-body>div:not(:last-child){border-right:0.5px solid #e0e0da}
 .ic-body .img-cell{display:block;padding:12px}
+.defect-type-label{margin-bottom:8px;font-size:14px;font-weight:700;color:#1a1a1a;text-align:left}
 .inspection-img{width:100%;border-radius:8px;background:#f5f5f3;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:12px;border:0.5px dashed #ccc;gap:6px}
 .badge-fail{display:inline-flex;align-items:center;justify-content:center;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:500;background:#fcebeb;color:#a32d2d}
 .remarks-box{border:0.5px solid #e0e0da;border-radius:12px;min-height:72px;padding:1rem;background:#f5f5f3;font-size:13px;color:#1a1a1a}
@@ -381,8 +382,8 @@ let data = {
     {name:'엣지밴더 #2',tp:7,tf:0, mp:28, mf:0, yp:611, yf:19},
   ],
   defects: [
-    {zone:'A동', equip:'수동곡면', result:'부적합', note:'', img:''},
-    {zone:'B동', equip:'자동화 #2', result:'부적합', note:'', img:''},
+    {zone:'A동', equip:'수동곡면', result:'부적합', type:'', note:'', img:''},
+    {zone:'B동', equip:'자동화 #2', result:'부적합', type:'', note:'', img:''},
   ],
   remarks: '',
 };
@@ -485,7 +486,7 @@ function renderReport() {
         <div style="font-weight:500">${i+1}</div>
         <div>${d.zone}</div>
         <div>${d.equip}</div>
-        <div class="img-cell">${d.img ? `<img src="${d.img}" style="width:100%;border-radius:8px;object-fit:cover;aspect-ratio:4/3">` : '<div class="inspection-img"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#bbb" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>검사 이미지 없음</div>'}</div>
+        <div class="img-cell">${d.type ? `<div class="defect-type-label">${d.type}</div>` : ''}${d.img ? `<img src="${d.img}" style="width:100%;border-radius:8px;object-fit:cover;aspect-ratio:4/3">` : '<div class="inspection-img"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#bbb" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>검사 이미지 없음</div>'}</div>
         <div><span class="badge-fail">${d.result}</span></div>
         <div style="font-size:12px;color:#555">${d.note||''}</div>
       </div>
@@ -563,6 +564,12 @@ function renderDefectInput(i) {
         <option ${d.result==='부적합'?'selected':''}>부적합</option>
         <option ${d.result==='적합'?'selected':''}>적합</option>
       </select>
+      <label>부적합 유형</label>
+      <input id="di-type-${i}" value="${d.type||''}" placeholder="예: 찍힘, 스크래치, 치수 불량">
+    </div>
+    <div class="row">
+      <label></label>
+      <div></div>
       <label>비고</label>
       <input id="di-note-${i}" value="${d.note||''}" placeholder="비고 (선택)">
     </div>
@@ -632,7 +639,7 @@ function handleDefectZoneChange(i) {
 }
 
 function addDefectInput() {
-  data.defects.push({zone:'A동', equip:EQUIP_A[0], result:'부적합', note:'', img:''});
+  data.defects.push({zone:'A동', equip:EQUIP_A[0], result:'부적합', type:'', note:'', img:''});
   renderDefectInput(data.defects.length-1);
 }
 
@@ -711,6 +718,7 @@ function applyManual() {
     d.zone  = document.getElementById(`di-zone-${i}`)?.value||d.zone;
     d.equip = document.getElementById(`di-equip-${i}`)?.value||d.equip;
     d.result= document.getElementById(`di-result-${i}`)?.value||d.result;
+    d.type  = document.getElementById(`di-type-${i}`)?.value||'';
     d.note  = document.getElementById(`di-note-${i}`)?.value||'';
     // img는 previewImg에서 이미 저장됨
   });
