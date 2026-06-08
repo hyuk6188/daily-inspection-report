@@ -3,26 +3,28 @@ const SHEET_NAME = 'Sheet1';
 const IMAGE_FOLDER_NAME = '일일 품질점검 이미지';
 
 function doGet(e) {
-  const callback = e && e.parameter && e.parameter.callback;
-  const payload = loadState_();
-  if (callback) {
-    return ContentService
-      .createTextOutput(`${callback}(${JSON.stringify(payload)});`)
-      .setMimeType(ContentService.MimeType.JAVASCRIPT);
-  }
-  return ContentService
-    .createTextOutput(JSON.stringify(payload))
-    .setMimeType(ContentService.MimeType.JSON);
+  var callback = e && e.parameter && e.parameter.callback;
+  var payload = loadState_();
+  var output = callback
+    ? callback + '(' + JSON.stringify(payload) + ');'
+    : JSON.stringify(payload);
+  var mimeType = callback
+    ? ContentService.MimeType.JAVASCRIPT
+    : ContentService.MimeType.JSON;
+
+  return ContentService.createTextOutput(output).setMimeType(mimeType);
 }
 
 function doPost(e) {
   try {
-    const raw = e && e.parameter && e.parameter.payload;
+    var raw = e && e.parameter && e.parameter.payload;
     if (!raw) throw new Error('Missing payload');
-    const payload = JSON.parse(raw);
-    const state = payload.state || {};
+
+    var payload = JSON.parse(raw);
+    var state = payload.state || {};
     state.defects = saveImages_(state.defects || []);
     saveState_(state, payload.updatedBy || 'anonymous');
+
     return ContentService
       .createTextOutput(JSON.stringify({ok: true, updatedAt: new Date().toISOString()}))
       .setMimeType(ContentService.MimeType.JSON);
@@ -34,8 +36,8 @@ function doPost(e) {
 }
 
 function loadState_() {
-  const sheet = getSheet_();
-  const stateText = sheet.getRange('B2').getValue();
+  var sheet = getSheet_();
+  var stateText = sheet.getRange('B2').getValue();
   return {
     ok: true,
     state: stateText ? JSON.parse(stateText) : null,
@@ -45,7 +47,7 @@ function loadState_() {
 }
 
 function saveState_(state, updatedBy) {
-  const sheet = getSheet_();
+  var sheet = getSheet_();
   sheet.getRange('A1:B5').setValues([
     ['key', 'value'],
     ['state', JSON.stringify(state)],
@@ -56,33 +58,38 @@ function saveState_(state, updatedBy) {
 }
 
 function getSheet_() {
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   return ss.getSheetByName(SHEET_NAME) || ss.insertSheet(SHEET_NAME);
 }
 
 function saveImages_(defects) {
-  const folder = getImageFolder_();
-  return defects.map((defect, index) => {
+  var folder = getImageFolder_();
+  return defects.map(function(defect, index) {
     if (!defect || !defect.img || !String(defect.img).startsWith('data:image/')) {
       return defect;
     }
-    const match = String(defect.img).match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+
+    var match = String(defect.img).match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
     if (!match) return defect;
-    const extension = match[1].split('/')[1].replace('jpeg', 'jpg');
-    const bytes = Utilities.base64Decode(match[2]);
-    const name = `inspection-${Date.now()}-${index}.${extension}`;
-    const blob = Utilities.newBlob(bytes, match[1], name);
-    const file = folder.createFile(blob);
+
+    var extension = match[1].split('/')[1].replace('jpeg', 'jpg');
+    var bytes = Utilities.base64Decode(match[2]);
+    var name = 'inspection-' + Date.now() + '-' + index + '.' + extension;
+    var blob = Utilities.newBlob(bytes, match[1], name);
+    var file = folder.createFile(blob);
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    return {
-      ...defect,
-      img: `https://drive.google.com/uc?export=view&id=${file.getId()}`
-    };
+
+    var copied = {};
+    Object.keys(defect).forEach(function(key) {
+      copied[key] = defect[key];
+    });
+    copied.img = 'https://drive.google.com/uc?export=view&id=' + file.getId();
+    return copied;
   });
 }
 
 function getImageFolder_() {
-  const existing = DriveApp.getFoldersByName(IMAGE_FOLDER_NAME);
+  var existing = DriveApp.getFoldersByName(IMAGE_FOLDER_NAME);
   if (existing.hasNext()) return existing.next();
   return DriveApp.createFolder(IMAGE_FOLDER_NAME);
 }
