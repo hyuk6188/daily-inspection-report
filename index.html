@@ -256,13 +256,13 @@ tbody td{padding:8px 12px;text-align:center;color:#1a1a1a;border:0.5px solid #e0
     <table class="input-table">
       <tr>
         <td class="label" style="width:100px">6월 누적(적합)</td>
-        <td><input type="number" id="m-month-pass" value="298" min="0"></td>
+        <td><input type="number" id="m-month-pass" value="373" min="0"></td>
         <td class="label">6월 누적(부적합)</td>
-        <td><input type="number" id="m-month-fail" value="10" min="0"></td>
+        <td><input type="number" id="m-month-fail" value="12" min="0"></td>
         <td class="label">26년 누적(적합)</td>
-        <td><input type="number" id="m-year-pass" value="6647" min="0"></td>
+        <td><input type="number" id="m-year-pass" value="6722" min="0"></td>
         <td class="label">26년 누적(부적합)</td>
-        <td><input type="number" id="m-year-fail" value="157" min="0"></td>
+        <td><input type="number" id="m-year-fail" value="159" min="0"></td>
       </tr>
     </table>
   </div>
@@ -344,13 +344,13 @@ tbody td{padding:8px 12px;text-align:center;color:#1a1a1a;border:0.5px solid #e0
       <table class="input-table">
         <tr>
           <td class="label">6월 누적(적합)</td>
-          <td><input type="number" id="e-month-pass" value="298" min="0"></td>
+          <td><input type="number" id="e-month-pass" value="373" min="0"></td>
           <td class="label">6월 누적(부적합)</td>
-          <td><input type="number" id="e-month-fail" value="10" min="0"></td>
+          <td><input type="number" id="e-month-fail" value="12" min="0"></td>
           <td class="label">26년 누적(적합)</td>
-          <td><input type="number" id="e-year-pass" value="6647" min="0"></td>
+          <td><input type="number" id="e-year-pass" value="6722" min="0"></td>
           <td class="label">26년 누적(부적합)</td>
-          <td><input type="number" id="e-year-fail" value="157" min="0"></td>
+          <td><input type="number" id="e-year-fail" value="159" min="0"></td>
         </tr>
       </table>
       <div class="btn-row">
@@ -369,19 +369,19 @@ const EQUIP_B = ['자동화 #1','자동화 #2','자동화 #3','자동화 #4','�
 
 let data = {
   A: [
-    {name:'머시닝센터', tp:7, tf:0, mp:26, mf:2, yp:697, yf:12},
-    {name:'수동곡면',   tp:6, tf:1, mp:27, mf:1, yp:692, yf:17},
-    {name:'협폭',       tp:7, tf:0, mp:27, mf:1, yp:699, yf:10},
-    {name:'45°',        tp:7, tf:0, mp:28, mf:0, yp:802, yf:7},
-    {name:'우레탄 자동',tp:7, tf:0, mp:28, mf:0, yp:802, yf:7},
-    {name:'우레탄 수동',tp:7, tf:0, mp:28, mf:0, yp:695, yf:14},
+    {name:'머시닝센터', tp:7, tf:0, mp:33, mf:2, yp:604, yf:12},
+    {name:'수동곡면',   tp:7, tf:0, mp:34, mf:1, yp:599, yf:17},
+    {name:'협폭',       tp:7, tf:0, mp:34, mf:1, yp:606, yf:10},
+    {name:'45°',        tp:7, tf:0, mp:35, mf:0, yp:609, yf:7},
+    {name:'우레탄 자동',tp:7, tf:0, mp:35, mf:0, yp:609, yf:7},
+    {name:'우레탄 수동',tp:7, tf:0, mp:35, mf:0, yp:602, yf:14},
   ],
   B: [
-    {name:'자동화 #1', tp:7, tf:0, mp:28, mf:0, yp:609, yf:21},
-    {name:'자동화 #2', tp:6, tf:1, mp:26, mf:3, yp:612, yf:18},
-    {name:'자동화 #3', tp:7, tf:0, mp:26, mf:0, yp:612, yf:18},
-    {name:'자동화 #4', tp:7, tf:0, mp:26, mf:3, yp:616, yf:14},
-    {name:'엣지밴더 #2',tp:7,tf:0, mp:28, mf:0, yp:611, yf:19},
+    {name:'자동화 #1', tp:7, tf:0, mp:35, mf:0, yp:616, yf:21},
+    {name:'자동화 #2', tp:5, tf:2, mp:30, mf:5, yp:617, yf:20},
+    {name:'자동화 #3', tp:7, tf:0, mp:35, mf:0, yp:619, yf:18},
+    {name:'자동화 #4', tp:7, tf:0, mp:32, mf:3, yp:623, yf:14},
+    {name:'엣지밴더 #2',tp:7,tf:0, mp:35, mf:0, yp:618, yf:19},
   ],
   defects: [
     {zone:'A동', equip:'수동곡면', result:'부적합', type:'', note:'', img:''},
