@@ -466,7 +466,7 @@ function renderReport() {
     .filter(r => r.mf > 0)
     .sort((a,b) => b.mf - a.mf)
     .slice(0,3)
-    .map((r,i) => `${i+1}. ${r.name} ${r.mf}건`);
+    .map((r,i) => `${i+1}. ${r.name} (${r.mf}건)`);
   document.getElementById('s-month-top').innerHTML = monthTop.length ? monthTop.join('<br>') : '부적합 설비 없음';
 
   // 검검내용
