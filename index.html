@@ -361,7 +361,6 @@ tbody td{padding:8px 12px;text-align:center;color:#1a1a1a;border:0.5px solid #e0
 // ── 초기 데이터 ──
 const EQUIP_A = ['머시닝센터','수동곡면','협폭','45°','우레탄 자동','우레탄 수동'];
 const EQUIP_B = ['자동화 #1','자동화 #2','자동화 #3','자동화 #4','엣지밴더 #2'];
-const GOOGLE_SHEETS_WEB_APP_URL = '';
 
 let data = {
   A: [
@@ -724,7 +723,6 @@ function applyManual() {
     // img는 previewImg에서 이미 저장됨
   });
   data.remarks = document.getElementById('m-remarks').value;
-  saveSharedData(false);
   showToast('보고서에 적용되었습니다');
   switchTab('report');
 }
@@ -764,7 +762,6 @@ function parseExcel() {
   if(!parsed.length) { showToast('형식을 확인하세요'); return; }
   data[excelTarget] = parsed;
   data.summaryOverride = null;
-  saveSharedData(false);
   showToast(`${excelTarget}동 데이터 ${parsed.length}건 적용 완료`);
   document.getElementById('excel-paste').value = '';
 }
@@ -775,7 +772,6 @@ function applyExcelSummary() {
   const yearPass = parseInt(document.getElementById('e-year-pass')?.value)||0;
   const yearFail = parseInt(document.getElementById('e-year-fail')?.value)||0;
   data.summaryOverride = {monthPass, monthFail, yearPass, yearFail};
-  saveSharedData(false);
   showToast('누적 데이터가 보고서에 적용되었습니다');
   switchTab('report');
 }
@@ -840,73 +836,6 @@ function getRawReportTotals() {
     });
     return total;
   }, {todayPass:0,todayFail:0,monthPass:0,monthFail:0,yearPass:0,yearFail:0});
-}
-
-function isSharedSyncConfigured() {
-  return Boolean(GOOGLE_SHEETS_WEB_APP_URL && GOOGLE_SHEETS_WEB_APP_URL.startsWith('https://'));
-}
-
-function getSerializableState() {
-  return JSON.parse(JSON.stringify(data));
-}
-
-async function saveSharedData(showMessage = true) {
-  if (!isSharedSyncConfigured()) {
-    if (showMessage) showToast('공유 저장소 URL을 먼저 설정해주세요');
-    return;
-  }
-  const payload = {
-    state: getSerializableState(),
-    updatedBy: navigator.userAgent || 'browser'
-  };
-  try {
-    await fetch(GOOGLE_SHEETS_WEB_APP_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      body: new URLSearchParams({payload: JSON.stringify(payload)})
-    });
-    if (showMessage) showToast('공유 데이터에 저장했습니다');
-  } catch (err) {
-    console.error(err);
-    if (showMessage) showToast('공유 데이터 저장에 실패했습니다');
-  }
-}
-
-function loadSharedData(showMessage = true) {
-  if (!isSharedSyncConfigured()) {
-    if (showMessage) showToast('공유 저장소 URL을 먼저 설정해주세요');
-    return;
-  }
-  const callbackName = `sharedStateCallback_${Date.now()}`;
-  const script = document.createElement('script');
-  const separator = GOOGLE_SHEETS_WEB_APP_URL.includes('?') ? '&' : '?';
-  window[callbackName] = payload => {
-    try {
-      if (payload && payload.state) {
-        data = payload.state;
-        initializeAutoBases();
-        renderReport();
-        renderManualInputs();
-        if (showMessage) showToast('공유 데이터를 불러왔습니다');
-      } else if (showMessage) {
-        showToast('저장된 공유 데이터가 없습니다');
-      }
-    } catch (err) {
-      console.error(err);
-      if (showMessage) showToast('공유 데이터 불러오기에 실패했습니다');
-    } finally {
-      delete window[callbackName];
-      script.remove();
-    }
-  };
-  script.onerror = () => {
-    delete window[callbackName];
-    script.remove();
-    if (showMessage) showToast('공유 데이터 연결에 실패했습니다');
-  };
-  script.src = `${GOOGLE_SHEETS_WEB_APP_URL}${separator}callback=${callbackName}&t=${Date.now()}`;
-  document.body.appendChild(script);
 }
 
 function getEffectiveTotals(totals) {
@@ -1054,12 +983,6 @@ async function copyDashboardImage() {
 renderReport();
 renderManualInputs();
 setExcelTarget('A');
-loadSharedData(false);
-setInterval(() => {
-  if (document.getElementById('tab-report')?.classList.contains('active')) {
-    loadSharedData(false);
-  }
-}, 30000);
 
 function prepareReportPrint() {
   clearPrintDisplayOverrides();
