@@ -751,10 +751,10 @@ function parseExcel() {
     const row = {
       name: name || equips[parsed.length] || `설비${parsed.length+1}`,
       tp: nums[0]||0, tf: nums[1]||0,
-      baseMonthPass: previous.baseMonthPass ?? ((previous.mp||0) - (previous.tp||0)),
-      baseMonthFail: previous.baseMonthFail ?? ((previous.mf||0) - (previous.tf||0)),
-      baseYearPass: previous.baseYearPass ?? ((previous.yp||0) - (previous.tp||0)),
-      baseYearFail: previous.baseYearFail ?? ((previous.yf||0) - (previous.tf||0)),
+      baseMonthPass: previous.baseMonthPass ?? (previous.mp||0),
+      baseMonthFail: previous.baseMonthFail ?? (previous.mf||0),
+      baseYearPass: previous.baseYearPass ?? (previous.yp||0),
+      baseYearFail: previous.baseYearFail ?? (previous.yf||0),
     };
     recalculateRowCumulative(row);
     parsed.push(row);
@@ -780,10 +780,10 @@ function initializeAutoBases() {
   ['A','B'].forEach(zone => {
     data[zone].forEach(r => {
       if (r.baseMonthPass === undefined) {
-        r.baseMonthPass = r.mp - r.tp;
-        r.baseMonthFail = r.mf - r.tf;
-        r.baseYearPass = r.yp - r.tp;
-        r.baseYearFail = r.yf - r.tf;
+        r.baseMonthPass = r.mp;
+        r.baseMonthFail = r.mf;
+        r.baseYearPass = r.yp;
+        r.baseYearFail = r.yf;
       }
     });
   });
