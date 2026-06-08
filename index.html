@@ -347,6 +347,8 @@ tbody td{padding:8px 12px;text-align:center;color:#1a1a1a;border:0.5px solid #e0
           <td><input type="number" id="e-month-pass" value="298" min="0"></td>
           <td class="label">6월 누적(부적합)</td>
           <td><input type="number" id="e-month-fail" value="10" min="0"></td>
+          <td class="label">26년 누적(적합)</td>
+          <td><input type="number" id="e-year-pass" value="6647" min="0"></td>
           <td class="label">26년 누적(부적합)</td>
           <td><input type="number" id="e-year-fail" value="157" min="0"></td>
         </tr>
@@ -385,6 +387,7 @@ let data = {
     {zone:'A동', equip:'수동곡면', result:'부적합', type:'', note:'', img:''},
     {zone:'B동', equip:'자동화 #2', result:'부적합', type:'', note:'', img:''},
   ],
+  summaryOverride: null,
   remarks: '',
 };
 let excelTarget = 'A';
@@ -456,17 +459,18 @@ function renderReport() {
     tbody.appendChild(sub);
   });
 
+  const totals = getEffectiveTotals({todayPass,todayFail,monthPass,monthFail,yearPass,yearFail});
   const total = document.createElement('tr');
   total.className='total-row';
-  total.innerHTML=`<td colspan="2">합계</td><td>${todayPass}</td><td class="fail-num">${todayFail}</td><td>${monthPass}</td><td class="fail-num">${monthFail}</td><td>${yearPass.toLocaleString()}</td><td class="fail-num">${yearFail}</td>`;
+  total.innerHTML=`<td colspan="2">합계</td><td>${totals.todayPass}</td><td class="fail-num">${totals.todayFail}</td><td>${totals.monthPass}</td><td class="fail-num">${totals.monthFail}</td><td>${totals.yearPass.toLocaleString()}</td><td class="fail-num">${totals.yearFail}</td>`;
   tbody.appendChild(total);
 
-  document.getElementById('s-today-total').textContent = todayPass+todayFail;
-  const todayTotal = todayPass + todayFail;
-  const todayFailRate = todayTotal ? (todayFail / todayTotal * 100).toFixed(1) : '0';
-  document.getElementById('s-today-fail').innerHTML = `${todayFail} <span class="stat-rate" id="s-today-fail-rate">(${todayFailRate}%)</span>`;
-  document.getElementById('s-month-total').textContent = monthFail;
-  document.getElementById('s-year-fail').textContent = yearFail;
+  document.getElementById('s-today-total').textContent = totals.todayPass+totals.todayFail;
+  const todayTotal = totals.todayPass + totals.todayFail;
+  const todayFailRate = todayTotal ? (totals.todayFail / todayTotal * 100).toFixed(1) : '0';
+  document.getElementById('s-today-fail').innerHTML = `${totals.todayFail} <span class="stat-rate" id="s-today-fail-rate">(${todayFailRate}%)</span>`;
+  document.getElementById('s-month-total').textContent = totals.monthFail;
+  document.getElementById('s-year-fail').textContent = totals.yearFail;
   const monthTop = [...data.A, ...data.B]
     .filter(r => r.mf > 0)
     .sort((a,b) => b.mf - a.mf)
@@ -760,6 +764,12 @@ function parseExcel() {
 }
 
 function applyExcelSummary() {
+  const monthPass = parseInt(document.getElementById('e-month-pass')?.value)||0;
+  const monthFail = parseInt(document.getElementById('e-month-fail')?.value)||0;
+  const yearPass = parseInt(document.getElementById('e-year-pass')?.value)||0;
+  const yearFail = parseInt(document.getElementById('e-year-fail')?.value)||0;
+  data.summaryOverride = {monthPass, monthFail, yearPass, yearFail};
+  showToast('누적 데이터가 보고서에 적용되었습니다');
   switchTab('report');
 }
 
@@ -775,7 +785,7 @@ function showToast(msg) {
   setTimeout(()=>t.classList.remove('show'), 2200);
 }
 
-function getReportTotals() {
+function getRawReportTotals() {
   return ['A','B'].reduce((total, zone) => {
     data[zone].forEach(r => {
       total.todayPass += r.tp;
@@ -789,10 +799,25 @@ function getReportTotals() {
   }, {todayPass:0,todayFail:0,monthPass:0,monthFail:0,yearPass:0,yearFail:0});
 }
 
+function getEffectiveTotals(totals) {
+  if (!data.summaryOverride) return totals;
+  return {
+    ...totals,
+    monthPass: data.summaryOverride.monthPass,
+    monthFail: data.summaryOverride.monthFail,
+    yearPass: data.summaryOverride.yearPass,
+    yearFail: data.summaryOverride.yearFail,
+  };
+}
+
+function getReportTotals() {
+  return getEffectiveTotals(getRawReportTotals());
+}
+
 function buildMeetingTemplateText() {
   const totals = getReportTotals();
   const defectLines = data.defects.length
-    ? data.defects.map((d,i) => `${i+1}. ${d.zone} / ${d.equip || '-'} / ${d.result || '-'}${d.note ? ` / ${d.note}` : ''}`)
+    ? data.defects.map((d,i) => `${i+1}. ${d.zone} / ${d.equip || '-'} / ${d.result || '-'}${d.type ? ` / ${d.type}` : ''}${d.note ? ` / ${d.note}` : ''}`)
     : ['없음'];
 
   return [
