@@ -114,6 +114,7 @@ tbody td{padding:8px 12px;text-align:center;color:#1a1a1a;border:0.5px solid #e0
 .input-table td.group{background:#f0f0ee;font-weight:600;font-size:12px;vertical-align:middle}
 .input-table input[type=number]{width:58px;padding:4px 2px;border:0.5px solid #ddd;border-radius:4px;font-size:12px;font-family:'Noto Sans KR',sans-serif;text-align:center;background:#fff;display:inline-block;vertical-align:middle}
 .input-table input[type=number]:focus{outline:none;border-color:#378ADD}
+.input-table input.auto-calc{background:#f5f5f3;color:#555;border-color:#e0e0da}
 
 /* 엑셀 붙여넣기 */
 .excel-area{display:flex;flex-direction:column;gap:10px}
@@ -392,6 +393,8 @@ let data = {
 };
 let excelTarget = 'A';
 
+initializeAutoBases();
+
 // ── 날짜 ──
 const now = new Date();
 const yyyy = now.getFullYear();
@@ -502,18 +505,19 @@ function renderReport() {
 
 // ── 수동 입력 렌더 ──
 function renderManualInputs() {
+  recalculateAllCumulative();
   ['A','B'].forEach(zone => {
     const tbody = document.getElementById(zone.toLowerCase()+'-manual-body');
     tbody.innerHTML = '';
     data[zone].forEach((r,i) => {
       tbody.innerHTML += `<tr>
         <td class="label">${r.name}</td>
-        <td><input type="number" id="m-${zone}-${i}-tp" value="${r.tp}" min="0" oninput="updateSubtotal('${zone}')"></td>
-        <td><input type="number" id="m-${zone}-${i}-tf" value="${r.tf}" min="0" oninput="updateSubtotal('${zone}')"></td>
-        <td><input type="number" id="m-${zone}-${i}-mp" value="${r.mp}" min="0" oninput="updateSubtotal('${zone}')"></td>
-        <td><input type="number" id="m-${zone}-${i}-mf" value="${r.mf}" min="0" oninput="updateSubtotal('${zone}')"></td>
-        <td><input type="number" id="m-${zone}-${i}-yp" value="${r.yp}" min="0" oninput="updateSubtotal('${zone}')"></td>
-        <td><input type="number" id="m-${zone}-${i}-yf" value="${r.yf}" min="0" oninput="updateSubtotal('${zone}')"></td>
+        <td><input type="number" id="m-${zone}-${i}-tp" value="${r.tp}" min="0" oninput="updateAutoCumulative('${zone}',${i});updateSubtotal('${zone}')"></td>
+        <td><input type="number" id="m-${zone}-${i}-tf" value="${r.tf}" min="0" oninput="updateAutoCumulative('${zone}',${i});updateSubtotal('${zone}')"></td>
+        <td><input class="auto-calc" type="number" id="m-${zone}-${i}-mp" value="${r.mp}" readonly tabindex="-1"></td>
+        <td><input class="auto-calc" type="number" id="m-${zone}-${i}-mf" value="${r.mf}" readonly tabindex="-1"></td>
+        <td><input class="auto-calc" type="number" id="m-${zone}-${i}-yp" value="${r.yp}" readonly tabindex="-1"></td>
+        <td><input class="auto-calc" type="number" id="m-${zone}-${i}-yf" value="${r.yf}" readonly tabindex="-1"></td>
       </tr>`;
     });
     tbody.innerHTML += `<tr style="background:#f5f5f3;font-weight:500">
@@ -708,14 +712,12 @@ function updateTotal() {
 }
 
 function applyManual() {
+  data.summaryOverride = null;
   ['A','B'].forEach(zone => {
     data[zone].forEach((r,i) => {
       r.tp = parseInt(document.getElementById(`m-${zone}-${i}-tp`)?.value)||0;
       r.tf = parseInt(document.getElementById(`m-${zone}-${i}-tf`)?.value)||0;
-      r.mp = parseInt(document.getElementById(`m-${zone}-${i}-mp`)?.value)||0;
-      r.mf = parseInt(document.getElementById(`m-${zone}-${i}-mf`)?.value)||0;
-      r.yp = parseInt(document.getElementById(`m-${zone}-${i}-yp`)?.value)||0;
-      r.yf = parseInt(document.getElementById(`m-${zone}-${i}-yf`)?.value)||0;
+      recalculateRowCumulative(r);
     });
   });
   data.defects.forEach((d,i) => {
@@ -745,20 +747,27 @@ function parseExcel() {
   if(!raw) { showToast('데이터를 먼저 붙여넣으세요'); return; }
   const rows = raw.split('\n').map(l=>l.split('\t').map(v=>v.trim()));
   const equips = excelTarget==='A' ? EQUIP_A : EQUIP_B;
+  const currentRows = data[excelTarget];
   const parsed = [];
-  rows.forEach(cols => {
+  rows.forEach((cols, idx) => {
     if(cols.length < 2) return;
     const name = cols[0];
     const nums = cols.slice(1).map(v=>parseInt(v.replace(/,/g,''))||0);
-    parsed.push({
+    const previous = currentRows[idx] || {};
+    const row = {
       name: name || equips[parsed.length] || `설비${parsed.length+1}`,
       tp: nums[0]||0, tf: nums[1]||0,
-      mp: nums[2]||0, mf: nums[3]||0,
-      yp: nums[4]||0, yf: nums[5]||0,
-    });
+      baseMonthPass: previous.baseMonthPass ?? ((previous.mp||0) - (previous.tp||0)),
+      baseMonthFail: previous.baseMonthFail ?? ((previous.mf||0) - (previous.tf||0)),
+      baseYearPass: previous.baseYearPass ?? ((previous.yp||0) - (previous.tp||0)),
+      baseYearFail: previous.baseYearFail ?? ((previous.yf||0) - (previous.tf||0)),
+    };
+    recalculateRowCumulative(row);
+    parsed.push(row);
   });
   if(!parsed.length) { showToast('형식을 확인하세요'); return; }
   data[excelTarget] = parsed;
+  data.summaryOverride = null;
   showToast(`${excelTarget}동 데이터 ${parsed.length}건 적용 완료`);
   document.getElementById('excel-paste').value = '';
 }
@@ -771,6 +780,42 @@ function applyExcelSummary() {
   data.summaryOverride = {monthPass, monthFail, yearPass, yearFail};
   showToast('누적 데이터가 보고서에 적용되었습니다');
   switchTab('report');
+}
+
+function initializeAutoBases() {
+  ['A','B'].forEach(zone => {
+    data[zone].forEach(r => {
+      if (r.baseMonthPass === undefined) {
+        r.baseMonthPass = r.mp - r.tp;
+        r.baseMonthFail = r.mf - r.tf;
+        r.baseYearPass = r.yp - r.tp;
+        r.baseYearFail = r.yf - r.tf;
+      }
+    });
+  });
+}
+
+function recalculateRowCumulative(r) {
+  r.mp = r.baseMonthPass + r.tp;
+  r.mf = r.baseMonthFail + r.tf;
+  r.yp = r.baseYearPass + r.tp;
+  r.yf = r.baseYearFail + r.tf;
+}
+
+function recalculateAllCumulative() {
+  initializeAutoBases();
+  ['A','B'].forEach(zone => data[zone].forEach(recalculateRowCumulative));
+}
+
+function updateAutoCumulative(zone, i) {
+  const r = data[zone][i];
+  r.tp = parseInt(document.getElementById(`m-${zone}-${i}-tp`)?.value)||0;
+  r.tf = parseInt(document.getElementById(`m-${zone}-${i}-tf`)?.value)||0;
+  recalculateRowCumulative(r);
+  document.getElementById(`m-${zone}-${i}-mp`).value = r.mp;
+  document.getElementById(`m-${zone}-${i}-mf`).value = r.mf;
+  document.getElementById(`m-${zone}-${i}-yp`).value = r.yp;
+  document.getElementById(`m-${zone}-${i}-yf`).value = r.yf;
 }
 
 function resetAll() {
