@@ -66,6 +66,10 @@ tbody td{padding:8px 12px;text-align:center;color:#1a1a1a;border:0.5px solid #e0
 
 /* 인쇄 버튼 */
 .report-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.5rem}
+.sheet-sync-status{display:inline-flex;align-items:center;gap:7px;margin-bottom:1.5rem;padding:8px 14px;border-radius:999px;background:#2f64c8;color:#fff;border:1px solid rgba(255,255,255,.28);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);font-size:13px;font-weight:600;line-height:1}
+.sheet-sync-status .dot{width:9px;height:9px;border-radius:50%;background:#f5a623;box-shadow:0 0 0 3px rgba(245,166,35,.18)}
+.sheet-sync-status[data-state="ready"] .dot{background:#2cc36b;box-shadow:0 0 0 3px rgba(44,195,107,.18)}
+.sheet-sync-status[data-state="error"] .dot{background:#ef4444;box-shadow:0 0 0 3px rgba(239,68,68,.18)}
 .image-copy-btn{display:inline-flex;align-items:center;gap:6px;margin-bottom:1.5rem;padding:8px 18px;background:#2f7d4f;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;font-family:'Noto Sans KR',sans-serif;cursor:pointer}
 .image-copy-btn:hover{background:#25663f}
 .capture-sharp,.capture-sharp *{color:#000!important}
@@ -179,6 +183,7 @@ tbody td{padding:8px 12px;text-align:center;color:#1a1a1a;border:0.5px solid #e0
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
       대시보드 이미지 복사
     </button>
+    <div class="sheet-sync-status" id="sheet-sync-status" data-state="waiting"><span class="dot"></span><span>시트 연결 필요</span></div>
   </div>
 
   <div class="page">
@@ -828,6 +833,13 @@ function showToast(msg) {
   setTimeout(()=>t.classList.remove('show'), 2200);
 }
 
+function setSheetSyncStatus(message, state = 'waiting') {
+  const el = document.getElementById('sheet-sync-status');
+  if (!el) return;
+  el.dataset.state = state;
+  el.querySelector('span:last-child').textContent = message;
+}
+
 function getRawReportTotals() {
   return ['A','B'].reduce((total, zone) => {
     data[zone].forEach(r => {
@@ -852,9 +864,11 @@ function getSerializableState() {
 
 async function saveSharedData(showMessage = true) {
   if (!isSharedSyncConfigured()) {
+    setSheetSyncStatus('시트 연결 필요', 'error');
     if (showMessage) showToast('공유 저장소 URL을 먼저 설정해주세요');
     return;
   }
+  setSheetSyncStatus('시트에 저장 중', 'waiting');
   const payload = {
     state: getSerializableState(),
     updatedBy: navigator.userAgent || 'browser'
@@ -866,18 +880,22 @@ async function saveSharedData(showMessage = true) {
       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
       body: new URLSearchParams({payload: JSON.stringify(payload)})
     });
+    setSheetSyncStatus('시트 동기화 완료', 'ready');
     if (showMessage) showToast('공유 데이터에 저장했습니다');
   } catch (err) {
     console.error(err);
+    setSheetSyncStatus('시트 저장 실패', 'error');
     if (showMessage) showToast('공유 데이터 저장에 실패했습니다');
   }
 }
 
 function loadSharedData(showMessage = true) {
   if (!isSharedSyncConfigured()) {
+    setSheetSyncStatus('시트 연결 필요', 'error');
     if (showMessage) showToast('공유 저장소 URL을 먼저 설정해주세요');
     return;
   }
+  setSheetSyncStatus('시트에서 불러오는 중', 'waiting');
   const callbackName = `sharedStateCallback_${Date.now()}`;
   const script = document.createElement('script');
   const separator = GOOGLE_SHEETS_WEB_APP_URL.includes('?') ? '&' : '?';
@@ -888,12 +906,15 @@ function loadSharedData(showMessage = true) {
         initializeAutoBases();
         renderReport();
         renderManualInputs();
+        setSheetSyncStatus('시트 동기화 완료', 'ready');
         if (showMessage) showToast('공유 데이터를 불러왔습니다');
-      } else if (showMessage) {
-        showToast('저장된 공유 데이터가 없습니다');
+      } else {
+        setSheetSyncStatus('저장된 시트 데이터 없음', 'waiting');
+        if (showMessage) showToast('저장된 공유 데이터가 없습니다');
       }
     } catch (err) {
       console.error(err);
+      setSheetSyncStatus('시트 불러오기 실패', 'error');
       if (showMessage) showToast('공유 데이터 불러오기에 실패했습니다');
     } finally {
       delete window[callbackName];
@@ -903,6 +924,7 @@ function loadSharedData(showMessage = true) {
   script.onerror = () => {
     delete window[callbackName];
     script.remove();
+    setSheetSyncStatus('시트 연결 실패', 'error');
     if (showMessage) showToast('공유 데이터 연결에 실패했습니다');
   };
   script.src = `${GOOGLE_SHEETS_WEB_APP_URL}${separator}callback=${callbackName}&t=${Date.now()}`;
